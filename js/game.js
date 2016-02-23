@@ -34,12 +34,21 @@ princessImage.onload = function () {
 };
 princessImage.src = "images/princess.png";
 
+// stone image
+var stoneReady = false ;
+var stoneImage = new Image() ;
+stoneImage.onload = function () {
+	stoneReady = true ;
+};
+stoneImage.src = "images/stone.png" ;
+
 // Game objects
 var hero = {
 	speed: 256 // movement in pixels per second
 };
 var princess = {};
 var princessesCaught = 0;
+var stones = new Array() ;
 
 // Handle keyboard controls
 var keysDown = {};
@@ -57,23 +66,44 @@ var reset = function () {
 	hero.x = canvas.width / 2;
 	hero.y = canvas.height / 2;
 
+	if (princessesCaught < 5 )
+		add_obstacle() ;
+
 	// Throw the princess somewhere on the screen randomly
-	princess.x = 32 + (Math.random() * (canvas.width - 64));
-	princess.y = 32 + (Math.random() * (canvas.height - 64));
-};
+	var x = 0 ;
+	var y = 0 ;
+	var found_place = false ;
+	while (!found_place) {
+		x = 32 + (Math.random() * (canvas.width - 96));
+		y = 32 + (Math.random() * (canvas.height - 96));
+		found_place = available_place (x , y)
+	}
+
+	princess.x = x ;
+	princess.y = y ;
+	};
 
 // Update game objects
 var update = function (modifier) {
+
 	if (38 in keysDown) { // Player holding up
+		if (!can_Up())
+			return false 
 		hero.y -= hero.speed * modifier;
 	}
 	if (40 in keysDown) { // Player holding down
+		if (!can_Down())
+			return false
 		hero.y += hero.speed * modifier;
 	}
 	if (37 in keysDown) { // Player holding left
+		if (!can_Left())
+			return false 
 		hero.x -= hero.speed * modifier;
 	}
 	if (39 in keysDown) { // Player holding right
+		if (!can_Right())
+			return false
 		hero.x += hero.speed * modifier;
 	}
 
@@ -89,6 +119,111 @@ var update = function (modifier) {
 	}
 };
 
+var can_Up = function () {
+	if ( hero.y < 30 )
+			return false
+
+	for ( var i = 0 ; i < stones.length ; i++ ){
+
+		if (	Math.abs(stones[i].y - hero.y) < 25  &&
+			Math.abs(stones[i].x - hero.x) < 25  
+		){
+			if ( !(stones[i].y - hero.y > 0) )
+				return false
+		}
+	}
+
+	return true 
+}
+
+var can_Down = function () {
+	if (  hero.y > canvas.height - 62 )
+			return false
+
+	for ( var i = 0 ; i < stones.length ; i++ ){
+
+		if (	Math.abs(hero.y - stones[i].y )  < 25  &&
+			Math.abs(stones[i].x - hero.x) < 25  
+		){
+			if ( !(stones[i].y - hero.y < 0) )
+				return false
+		}
+	}
+
+	return true 
+}
+
+var can_Left = function () {
+	if ( hero.x < 30 )
+		return false 
+
+	for ( var i = 0 ; i < stones.length ; i++ ){
+
+		if (	Math.abs(stones[i].y - hero.y) < 25  &&
+			Math.abs(stones[i].x - hero.x) < 25  
+		){
+			if ( !(stones[i].x - hero.x > 0) )
+				return false
+		}
+	}
+	return true 
+}
+
+var can_Right = function () {
+	if ( hero.x > canvas.height - 30 )
+		return false
+
+	for ( var i = 0 ; i < stones.length ; i++ ){
+
+		if (	Math.abs(stones[i].y - hero.y) < 25  &&
+			Math.abs(stones[i].x - hero.x) < 25  
+		){
+			if ( !(stones[i].x - hero.x < 0) )
+				return false
+		}
+	}
+	return true
+}
+
+var available_place = function (x , y) {
+	if (y < 30 )
+		return false
+
+	if (y > canvas.height - 62 )
+		return false
+
+	if (x < 30 )
+		return false 
+
+	if (x > canvas.height - 30 )
+		return false
+
+	for ( var i = 0 ; i < stones.length ; i++ ){
+
+		if (	Math.abs(stones[i].y - y) < 30  &&
+			Math.abs(stones[i].x - x) < 30  
+		){
+			return false
+		}
+	}
+	return true 
+}
+
+var add_obstacle = function() {
+	var x = 0 ;
+	var y = 0 ;
+	var found_place = false ;
+	while (!found_place) {
+		x = 32 + (Math.random() * (canvas.width - 96));
+		y = 32 + (Math.random() * (canvas.height - 96));
+		found_place = available_place (x , y)
+	}
+
+	var new_stone = { x : x  , y : y }
+	
+	stones.push(new_stone)
+} 
+
 // Draw everything
 var render = function () {
 	if (bgReady) {
@@ -102,6 +237,12 @@ var render = function () {
 	if (princessReady) {
 		ctx.drawImage(princessImage, princess.x, princess.y);
 	}
+
+	if (stoneReady) {
+		for ( var i = 0 ; i < stones.length ; i++)
+			ctx.drawImage(stoneImage , stones[i].x , stones[i].y) ;
+	}
+
 
 	// Score
 	ctx.fillStyle = "rgb(250, 250, 250)";
